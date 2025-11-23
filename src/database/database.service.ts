@@ -1,37 +1,32 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import *as mysql  from 'mysql2/promise';
-import * as dotenv from 'dotenv';
-
-dotenv.config();
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import * as mysql from 'mysql2/promise';
 
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
-  pool!: mysql.Pool;
+  private connection: mysql.Pool;
 
   async onModuleInit() {
-    this.pool = mysql.createPool({
-      host: process.env.DB_HOST || 'mysql-264482cd-gbox-68bd.b.aivencloud.com',
-      port: +(process.env.DB_PORT || 26413),
-      user: process.env.DB_USER || 'avnadmin',
-      password: '',
-      database: process.env.DB_NAME || 'defaultdb',
+    this.connection = mysql.createPool({
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD, // <--- This reads from .env
+      database: process.env.DB_NAME,
+      port: Number(process.env.DB_PORT),
       waitForConnections: true,
       connectionLimit: 10,
-      queueLimit: 0,
     });
-
-    // optional: test connection
-    const conn = await this.pool.getConnection();
-    await conn.ping();
-    conn.release();
-    console.log('MySQL pool created');
+    console.log('Database connected!');
   }
 
   async onModuleDestroy() {
-    await this.pool.end();
+    if (this.connection) {
+      await this.connection.end();
+    }
   }
 
-  getPool() {
-    return this.pool;
+  // Generic query runner
+  async query(sql: string, params?: any[]) {
+    const [results] = await this.connection.execute(sql, params);
+    return results;
   }
 }

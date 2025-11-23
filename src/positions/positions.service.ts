@@ -1,28 +1,45 @@
 import { Injectable } from '@nestjs/common';
+import { DatabaseService } from '../database/database.service';
+
+export interface CreatePositionDto {
+  position_code: string;
+  position_name: string;
+}
+
+export interface UpdatePositionDto {
+  position_code?: string;
+  position_name?: string;
+}
 
 @Injectable()
 export class PositionsService {
-  
-  // 1. Fix for "Property 'create' does not exist"
-  create(data: { position_code: string; position_name: string }) {
-    // TODO: Add your database logic here (e.g., TypeORM, Prisma, or SQL)
-    console.log('Creating position:', data);
-    return { message: 'Position created successfully', data };
+  constructor(private readonly db: DatabaseService) {}
+
+  async findAll() {
+    return this.db.query('SELECT * FROM positions');
   }
 
-  // 2. Fix for "Property 'remove' does not exist"
-  remove(id: number) {
-    // TODO: Add your database logic here
-    console.log('Removing position with ID:', id);
-    return { message: `Position #${id} removed successfully` };
+  async create(data: CreatePositionDto) {
+    const query = 'INSERT INTO positions (position_code, position_name) VALUES (?, ?)';
+    
+    // Use 'any' type here to access .insertId on the result
+    const result: any = await this.db.query(query, [data.position_code, data.position_name]);
+
+    // ✅ Return the real ID
+    return {
+      id: result.insertId, 
+      ...data,
+    };
   }
 
-  // You likely need these as well for the other Controller methods:
-  findAll() {
-    return { message: 'Returning all positions' };
+  async update(id: number, data: UpdatePositionDto) {
+    const query = `UPDATE positions SET position_code = ?, position_name = ? WHERE id = ?`;
+    await this.db.query(query, [data.position_code, data.position_name, id]);
+    return { id, ...data };
   }
 
-  update(id: number, data: any) {
-    return { message: `Position #${id} updated` };
+  async remove(id: number) {
+    await this.db.query('DELETE FROM positions WHERE id = ?', [id]);
+    return { message: 'Deleted successfully', id };
   }
 }

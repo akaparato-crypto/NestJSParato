@@ -1,10 +1,9 @@
 import { Module, Global } from '@nestjs/common';
 import { DatabaseService } from './database.service';
 
+@Global() // Optional: makes it available everywhere without importing
 @Module({
-  imports: [
-  ],
   providers: [DatabaseService],
-  exports: [DatabaseService], // Exports DatabaseService for other modules to use
+  exports: [DatabaseService], // <--- CRITICAL: Allows PositionsModule to use it
 })
-export class DatabaseModule {} // ✅ This "export" keyword fixes your error
+export class DatabaseModule {}

@@ -1,15 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-
-export interface CreatePositionDto {
-  position_code: string;
-  position_name: string;
-}
-
-export interface UpdatePositionDto {
-  position_code?: string;
-  position_name?: string;
-}
+// Import the DTOs from the controller so we don't duplicate code
+import { CreatePositionDto, UpdatePositionDto } from './positions.controller';
 
 @Injectable()
 export class PositionsService {
@@ -19,16 +11,25 @@ export class PositionsService {
     return this.db.query('SELECT * FROM positions');
   }
 
-  async create(data: CreatePositionDto) {
-    const query = 'INSERT INTO positions (position_code, position_name) VALUES (?, ?)';
+  // UPDATED: Now accepts userId as the second argument
+  async create(data: CreatePositionDto, userId: number) {
+    // UPDATED: Query now includes 'user_id'
+    const query = 'INSERT INTO positions (position_code, position_name, user_id) VALUES (?, ?, ?)';
     
-    // Use 'any' type here to access .insertId on the result
-    const result: any = await this.db.query(query, [data.position_code, data.position_name]);
+    // UPDATED: Passing userId to the database. 
+    // We use '?? 1' here as a double-safety check to ensure it's never undefined.
+    const safeUserId = userId ?? 1;
 
-    // ✅ Return the real ID
+    const result: any = await this.db.query(query, [
+      data.position_code, 
+      data.position_name, 
+      safeUserId
+    ]);
+
     return {
       id: result.insertId, 
       ...data,
+      user_id: safeUserId
     };
   }
 

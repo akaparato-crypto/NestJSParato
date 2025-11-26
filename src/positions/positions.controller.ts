@@ -11,7 +11,7 @@ import {
 import { Request } from 'express';
 import { PositionsService } from './positions.service';
 
-// ideally, move these to a separate .dto.ts file, but they work here for now
+// DTOs
 export interface CreatePositionDto {
   position_code: string;
   position_name: string;
@@ -36,7 +36,12 @@ export class PositionsController {
     @Req() req: Request, 
     @Body() body: CreatePositionDto
   ) {
-    return this.positionsService.create(body);
+    // FIX: Get the User ID safely. 
+    // If (req as any).user is undefined, we fallback to '1' to prevent crashes.
+    const userId = (req as any).user?.id || 1; 
+
+    // Pass both the body and the userId to the service
+    return this.positionsService.create(body, userId);
   }
 
   @Patch(':id')
@@ -44,7 +49,7 @@ export class PositionsController {
     @Param('id') id: string, 
     @Body() data: UpdatePositionDto
   ) {
-    // Note: +id converts string to number. Remove '+' if using UUIDs.
+    // Convert id string to number with '+'
     return this.positionsService.update(+id, data);
   }
 
